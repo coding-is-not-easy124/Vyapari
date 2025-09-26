@@ -43,9 +43,9 @@ export async function POST(request){
 
         // Image Upload to ImageKit
 
-        const Buffer = Buffer.from(await image.arrayBuffer());
+        const buffer = Buffer.from(await image.arrayBuffer());
         const response = await imagekit.upload({
-            file: Buffer,
+            file: buffer,
             fileName: image.name,
             folder: "logos"
         })
@@ -58,6 +58,11 @@ export async function POST(request){
                 {width: '512'}
             ]
         })
+
+        const userExists = await prisma.user.findUnique({ where: { id: userId } });
+        if (!userExists) {
+            return NextResponse.json({ error: "User does not exist" }, { status: 400 });
+        }
 
         const newStore = await prisma.store.create({
             data: {
