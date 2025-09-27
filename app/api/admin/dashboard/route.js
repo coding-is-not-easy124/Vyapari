@@ -1,4 +1,48 @@
-
-
+import prisma from "@/lib/prisma";
+import authAdmin from "@/middlewares/authAdmin";
+import { getAuth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 // Get Dashboard Data for Admin( Total Orders, Total Stores, Total Products, Total Revenue)
+
+export async function GET(request){
+    const { userId } = getAuth(request);
+    const isAdmin = await authAdmin(userId);
+    if(!isAdmin){
+        return NextResponse.json({ error: 'Not Authorized' }, { status: 401 });
+    }
+
+    // Get Total Orders
+    const orders = await prisma.order.count();
+
+    //Get Total Stores on App
+    const stores = await prisma.store.count();
+
+    //Get all Orders include only createdeAt and total & calculate total Revenue
+    const allOrders = await prisma.order.findMany({
+        select: {
+            createdAt: true,
+            total: true,
+        }
+    })
+
+    let totalRevenue = 0;
+    allOrders.forEach(order => {
+        totalRevenue += order.total
+    })
+
+    const revenue = totalRevenue.toFixed(2);
+    
+    // Total Products on App
+    const products = await prisma.product.count();
+    const dashboardData = {
+        orders,
+        stores,
+        products,
+        revenue,
+        allOrders
+    }
+
+    return NextResponse.json({ dashboardData });
+    
+}
