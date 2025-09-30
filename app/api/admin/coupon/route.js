@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
 // Add New Coupon
 export async function POST(request) {
     try {
-        const { userId } = getAuth();
+        const { userId } = getAuth(request);
         const isAdmin = await authAdmin(userId);
 
         if(!isAdmin){
@@ -27,7 +27,7 @@ export async function POST(request) {
 // Delete Coupon /api/coupon?id=couponId
 export async function DELETE(request) {
     try {
-        const { userId } = getAuth();
+        const { userId } = getAuth(request);
         const isAdmin = await authAdmin(userId);
 
         if(!isAdmin){
@@ -49,7 +49,7 @@ export async function DELETE(request) {
 // Get All Coupons
 export async function GET(request) {
     try {
-        const { userId } = getAuth();
+        const { userId } = getAuth(request);
         const isAdmin = await authAdmin(userId);
 
         if(!isAdmin){
