@@ -60,7 +60,7 @@ export default function AdminCoupons() {
             const confirm = window.confirm("Are you sure that you want to Delete this Coupon?");
             if(!confirm) return;
             const token = await getToken();
-            await axios.delete('/api/admin/coupon?code=${code}', { headers: {Authorization: `Bearer ${token}`} })
+            await axios.delete(`/api/admin/coupon?code=${code}`, { headers: {Authorization: `Bearer ${token}`} })
             await fetchCoupons();
             toast.success("Coupon Deleted Successfully!!")
 
