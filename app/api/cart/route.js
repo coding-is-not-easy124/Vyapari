@@ -1,0 +1,41 @@
+import prisma from "@/lib/prisma";
+import { getAuth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+
+
+// Update User Cart 
+
+export async function POST(request) {
+    try {
+        const { userId } = getAuth(request);
+        const { cart } = await request.json();
+
+        // Save the Cart to the User Object
+        await prisma.user.update({
+            where: { id: userId },
+            data: { cart: cart }
+        })
+
+        return NextResponse.json({ message: 'Cart Updated' })
+    } catch (error) {
+        
+    }
+}
+
+// Get User Cart
+export async function GET(request) {
+    try {
+        const { userId } = getAuth(request);
+        const { cart } = await request.json();
+
+        // Save the Cart to the User Object
+        await prisma.user.update({
+            where: { id: userId },
+            data: { cart: cart }
+        })
+
+        return NextResponse.json({ message: 'Cart Updated' })
+    } catch (error) {
+        
+    }
+}
