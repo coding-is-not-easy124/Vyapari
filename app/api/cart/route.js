@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 
 
 // Update User Cart 
-
 export async function POST(request) {
     try {
         const { userId } = getAuth(request);
@@ -18,7 +17,8 @@ export async function POST(request) {
 
         return NextResponse.json({ message: 'Cart Updated' })
     } catch (error) {
-        
+        console.error(error);
+        return NextResponse.json({ error: error.message }, { status: 400 });
     }
 }
 
@@ -26,16 +26,14 @@ export async function POST(request) {
 export async function GET(request) {
     try {
         const { userId } = getAuth(request);
-        const { cart } = await request.json();
-
-        // Save the Cart to the User Object
-        await prisma.user.update({
-            where: { id: userId },
-            data: { cart: cart }
+        
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
         })
 
-        return NextResponse.json({ message: 'Cart Updated' })
+        return NextResponse.json({ cart: user.cart })
     } catch (error) {
-        
+        console.error(error);
+        return NextResponse.json({ error: error.message }, { status: 400 });
     }
 }
