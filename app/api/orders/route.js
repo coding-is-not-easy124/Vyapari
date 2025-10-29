@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { getAuth } from "@clerk/nextjs/server";
 import { PaymentMethod } from "@prisma/client";
 import { NextResponse } from "next/server";
+import Stripe from "stripe";
 
 
 export async function POST(request){
@@ -90,6 +91,35 @@ export async function POST(request){
                 }
             })
             orderIds.push(order.id);
+        }
+
+        if(paymentMethod === 'STRIPE'){
+            const stripe = Stripe(process.env.STRIPE_sECRET_KEY);
+            const origin = await request.headers.get('origin');
+
+            const session = await stripe.checkout.sessions.create({
+                payment_method_types: ['card'],
+                line_items: [{
+                    price_data: {
+                        currency: 'usd',
+                        product_data:{
+                            name: 'Order'
+                        },
+                        unit_amount: Math.round(fullAmount * 100)
+                    },
+                    quantity: 1
+                }],
+                expires_at: Math.floor(Date.now() / 1000) + 30 * 60,  // Current Time + 30 Minutes
+                mode: 'payment',
+                success_ulr: `${origin}/loading?nextUrl=orders`,
+                cancel_url: `${origin}/cart`,
+                metadata: {
+                    orderIds: orderIds.join(','),
+                    userId,
+                    appId: 'gocart'
+                }
+            })
+            return NextResponse.json({session})
         }
 
         // Clear the Cart

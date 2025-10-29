@@ -1,0 +1,75 @@
+import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export async function POST(request){
+    try {
+        const body = await request.text();
+        const sig = request.get('stripe-signature');
+
+        const event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+
+        const handlePaymentIntent = async (paymentIntentId, isPaid) => {
+            const session = await stripe.checkout.sessions.list({
+                payment_intent: paymentIntentId
+            })
+
+            const { orderIds, userId, appId } = session.data[0].metadata
+            
+            if(appId !== 'gocart'){
+                return NextResponse.json({ received: true, message: 'Invalid App Id!!' })
+            }
+
+            const orderIdsArray = orderIds.split(',');
+
+            if(isPaid){
+                // Mark Order As Paid
+                await Promise.all(orderIdsArray.map(async (orderId) => {
+                    await prisma.order.update({
+                        where: {id: orderId},
+                        data: {isPaid: true}
+                    })
+                }))
+
+                // Delete Cart From User
+                await prisma.user.update({
+                    where: {id: userId},
+                    data: {cart: {}}
+                })
+            } else {
+                // Delete Order from DB
+                await Promise.all(orderIdsArray.map(async (orderId) => {
+                    await prisma.order.delete({
+                        where: {},
+                    })
+                }))
+            }
+        
+        }
+
+
+        switch (event.type) {
+            case 'payment_intent.succeeded': {
+                await handlePaymentIntent(event.data.object.id, true)
+                break;
+            }
+            
+            case 'payment_intent.cancelled': {
+                await handlePaymentIntent(event.data.object.id, false)
+                break;
+            }
+        
+            default:
+                console.log('Unhandled event type:', event.type)
+                break;
+        }
+
+        return NextResponse.json({received: true});
+    } catch (error) {
+        console.error(error);
+        return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+}
