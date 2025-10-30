@@ -43,7 +43,7 @@ export async function POST(request){
                 // Delete Order from DB
                 await Promise.all(orderIdsArray.map(async (orderId) => {
                     await prisma.order.delete({
-                        where: {},
+                        where: {id: orderId},
                     })
                 }))
             }
@@ -72,4 +72,8 @@ export async function POST(request){
         console.error(error);
         return NextResponse.json({ error: error.message }, { status: 400 });
     }
+}
+
+export const config = {
+    api: { bodyparser: false }
 }
