@@ -39,11 +39,22 @@ async function main(base64Image, mimeType) {
   ];
 
    const response = await openai.chat.completions.create({
-       model: "gemini-2.0-flash",
-       messages: messages,
+       model: process.env.OPENAI_MODEL,
+       messages,
    });
 
-   console.log(response.choices[0]);
+   const raw = response.choices[0].message.content;
+
+   // Remove ``` json or ``` wrappers if present
+   const cleaned = raw.replace(/```json```/g, "").trim();
+   
+   let parsed;
+   try {
+      parsed = JSON.parse(cleaned);
+   } catch (error) {
+      throw new Error("AI did not return valid JSON")
+   }
+   return parsed;
 
 }
 
@@ -57,8 +68,10 @@ export async function POST(request) {
             return NextResponse.json({ error: 'not authorized' }, { status: 401 })
         }
         const { base64Image, mimeType } = await request.json();
-
+        const result = await main(base64Image, mimeType);
+        return NextResponse.json({...result});
     } catch (error) {
-        
+        console.error(error);
+        return NextResponse.json({ error: error.code || error.message }, { status: 400 });
     }
 }
